@@ -86,7 +86,7 @@ export default function Home() {
         reader.onloadend = () => {
           const dataUrl = reader.result as string;
           setImageDataUrlsList(prev => [...prev, dataUrl]);
-          handleExtractText(dataUrl); // Automatically extract text
+          handleExtractText(dataUrl); 
         };
         reader.readAsDataURL(file);
       });
@@ -198,7 +198,7 @@ export default function Home() {
             videoRef.current.srcObject = null;
         }
         setShowCameraFeed(false);
-        handleExtractText(dataUrl); // Automatically extract text
+        handleExtractText(dataUrl); 
       }
     }
   }, [hasCameraPermission, handleExtractText]);
@@ -381,7 +381,7 @@ export default function Home() {
         </Card>
       </main>
       <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border bg-card">
-        © {new Date().getFullYear()} Text Capture Pro. All rights reserved.
+        © {new Date().getFullYear()} Textify. All rights reserved.
       </footer>
     </div>
   );
