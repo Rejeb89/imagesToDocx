@@ -14,19 +14,19 @@ body {
     --card-foreground: 0 0% 13%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 13%;
-    --primary: 0 0% 9%; /* Black */
+    --primary: 0 0% 50%; /* Mid-gray for primary in light mode */
     --primary-foreground: 0 0% 98%; /* Very light gray (almost white) */
     --secondary: 0 0% 96.1%; /* Light gray */
     --secondary-foreground: 0 0% 9%; /* Black */
     --muted: 0 0% 96.1%; /* Light gray */
     --muted-foreground: 0 0% 45.1%; /* Medium gray */
-    --accent: 0 0% 9%; /* Black */
-    --accent-foreground: 0 0% 98%; /* Very light gray (almost white) */
+    --accent: 0 0% 70%; /* Lighter-gray for accent in light mode */
+    --accent-foreground: 0 0% 9%; /* Black */
     --destructive: 0 84.2% 60.2%; /* Red for errors */
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%; /* Light gray border */
     --input: 0 0% 93%; /* Slightly darker light gray for input */
-    --ring: 0 0% 9%; /* Black for focus rings */
+    --ring: 0 0% 50%; /* Mid-gray for focus rings */
     --chart-1: 0 0% 50%;
     --chart-2: 0 0% 30%;
     --chart-3: 0 0% 70%;
@@ -49,14 +49,14 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%; /* White */
+    --primary: 0 0% 80%; /* Light gray for primary in dark mode */
     --primary-foreground: 0 0% 9%; /* Black */
     --secondary: 0 0% 14.9%; /* Darker gray */
     --secondary-foreground: 0 0% 98%; /* White */
     --muted: 0 0% 14.9%; /* Darker gray */
     --muted-foreground: 0 0% 63%; 
-    --accent: 0 0% 98%; /* White */
-    --accent-foreground: 0 0% 9%; /* Black */
+    --accent: 0 0% 30%; /* Darker gray for accent in dark mode */
+    --accent-foreground: 0 0% 98%; /* White */
     --destructive: 0 72.2% 50.6%; /* Dark mode destructive red */
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 20%; /* Dark gray border */
@@ -84,5 +84,8 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    background-image: url('/arabic_calligraphy_dark_pattern.png');
+    background-repeat: repeat; /* This will tile the image */
+    /* You might want to add other background properties if needed, e.g., background-attachment: fixed; */
   }
 }
