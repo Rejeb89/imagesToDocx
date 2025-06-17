@@ -172,10 +172,9 @@ export default function Home() {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
         setImageDataUrl(dataUrl);
-        setImageFile(new File([dataUrl], "capture.png", { type: "image/png" })); // Create a mock file for consistency
+        setImageFile(new File([dataUrl], "capture.png", { type: "image/png" })); 
         setExtractedText(null);
         
-        // Stop camera stream after capture
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
@@ -203,8 +202,8 @@ export default function Home() {
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-10 flex justify-center items-start">
         <Card className="w-full max-w-2xl shadow-xl rounded-lg bg-card">
-          <CardHeader className="p-6 border-b border-border/70">
-            <CardTitle className="text-3xl font-bold text-center text-primary">
+          <CardHeader className="p-6">
+            <CardTitle className="text-3xl font-bold text-center text-foreground">
               استخراج النص من الصور
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground mt-2 text-base">
@@ -214,7 +213,7 @@ export default function Home() {
           <CardContent className="p-6 space-y-6">
             {!showCameraFeed && (
               <div className="space-y-3">
-                <Label htmlFor="image-upload" className="text-md font-semibold text-foreground">
+                <Label htmlFor="image-upload" className="text-md font-semibold text-foreground text-center block w-full">
                   اختر صورة
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -294,7 +293,7 @@ export default function Home() {
               <DynamicImagePreview imageDataUrl={imageDataUrl} onClearImage={handleClearImage} />
             )}
             
-            {errorMessage && !showCameraFeed && ( // Only show general errors if not in camera view or if camera error is already handled
+            {errorMessage && !showCameraFeed && ( 
               <div className="p-3 bg-destructive/10 border border-destructive/50 rounded-md flex items-center text-destructive text-sm">
                 <AlertTriangle className="h-5 w-5 mr-2.5 flex-shrink-0" />
                 <p>{errorMessage}</p>
@@ -317,19 +316,16 @@ export default function Home() {
               />
             )}
           </CardContent>
-          <CardFooter className="p-6 border-t border-border/70">
+          <CardFooter className="p-6">
             <p className="text-xs text-muted-foreground text-center w-full">
               للحصول على أفضل النتائج، استخدم صورًا واضحة ذات نص جيد الإضاءة.
             </p>
           </CardFooter>
         </Card>
       </main>
-      <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border/70 bg-card">
+      <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border bg-card">
         © {new Date().getFullYear()} Text Capture Pro. جميع الحقوق محفوظة.
       </footer>
     </div>
   );
 }
-
-
-    
