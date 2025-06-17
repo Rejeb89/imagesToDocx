@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Textify',
+  title: 'Textify Ai',
   description: 'Capture image, extract text, and export to DOCX.',
 };
 
