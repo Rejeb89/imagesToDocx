@@ -10,10 +10,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { imageToTextConversion } from '@/ai/flows/image-to-text-conversion';
 import { exportToDocx } from '@/lib/docx-utils';
-import { Camera, FileUp, Loader2, AlertTriangle, ScanText, Copy } from 'lucide-react';
+import { Camera, FileUp, Loader2, AlertTriangle, Trash2, UploadCloud } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
 
 const DynamicImagePreview = dynamic(() => import('@/components/ImagePreview').then(mod => mod.ImagePreview), {
   loading: () => <div className="flex justify-center items-center p-4"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Loading Preview...</p></div>,
@@ -27,10 +26,10 @@ const DynamicExtractedTextView = dynamic(() => import('@/components/ExtractedTex
 
 
 export default function Home() {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
-  const [extractedText, setExtractedText] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  const [imageFilesList, setImageFilesList] = useState<File[]>([]);
+  const [imageDataUrlsList, setImageDataUrlsList] = useState<string[]>([]);
+  const [extractedTextsList, setExtractedTextsList] = useState<string[]>([]);
+  const [extractionCount, setExtractionCount] = useState<number>(0);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -41,83 +40,105 @@ export default function Home() {
 
   const { toast } = useToast();
 
+  const isExtracting = extractionCount > 0;
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   const handleExtractText = useCallback(async (dataUrlToProcess: string) => {
     if (!dataUrlToProcess) {
-      setErrorMessage("Please select or capture an image first.");
+      // This case should ideally not be hit if called correctly
       return;
     }
-    setIsExtracting(true);
-    setExtractedText(null); 
+    setExtractionCount(prev => prev + 1);
     setErrorMessage(null);
     try {
       const result = await imageToTextConversion({ photoDataUri: dataUrlToProcess });
-      setExtractedText(result.text || "No text found in the image.");
+      setExtractedTextsList(prev => [...prev, result.text || "لم يتم العثور على نص في الصورة."]);
     } catch (error) {
       console.error("Error extracting text:", error);
-      setErrorMessage("Failed to extract text. The image might be too complex or not contain clearly visible Arabic text. Please try another image.");
+      // Add a placeholder for the failed extraction to maintain list order
+      setExtractedTextsList(prev => [...prev, "فشل استخراج النص لهذه الصورة."]);
+      setErrorMessage("فشل استخراج النص لبعض الصور. قد تكون الصورة معقدة جدًا أو لا تحتوي على نص عربي واضح.");
       toast({
-        title: "Extraction Error",
-        description: "Could not extract text from the image.",
+        title: "خطأ في الاستخراج",
+        description: "تعذر استخراج النص من إحدى الصور.",
         variant: "destructive",
       });
     } finally {
-      setIsExtracting(false);
+      setExtractionCount(prev => prev - 1);
     }
-  }, [toast, setErrorMessage, setExtractedText, setIsExtracting]);
+  }, [toast]);
 
   const handleImageChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setShowCameraFeed(false); // Hide camera feed if a file is uploaded
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 4 * 1024 * 1024) { 
-        setErrorMessage("Image size should be less than 4MB.");
-        setImageFile(null);
-        setImageDataUrl(null);
-        setExtractedText(null);
-        return;
-      }
-      setImageFile(file);
-      setExtractedText(null);
-      setErrorMessage(null);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setImageDataUrl(dataUrl);
-        if (dataUrl) {
-          handleExtractText(dataUrl);
+    setShowCameraFeed(false);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFilesArray = Array.from(files);
+      // Clear previous errors when new files are uploaded
+      setErrorMessage(null); 
+      
+      // Optionally clear previous images, or append. For now, let's append.
+      // setImageFilesList([]);
+      // setImageDataUrlsList([]);
+      // setExtractedTextsList([]);
+
+      newFilesArray.forEach(file => {
+        if (file.size > 4 * 1024 * 1024) {
+          setErrorMessage(prevError => (prevError ? prevError + "\n" : "") + `حجم الملف ${file.name} كبير جدًا (الحد الأقصى 4 ميجابايت).`);
+          return;
         }
-      };
-      reader.readAsDataURL(file);
+        setImageFilesList(prev => [...prev, file]);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          setImageDataUrlsList(prev => [...prev, dataUrl]);
+          handleExtractText(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      });
     }
-  }, [handleExtractText, setErrorMessage, setImageFile, setImageDataUrl, setExtractedText]);
+     // Reset file input to allow re-uploading the same file(s) if needed
+    if (event.target) {
+        event.target.value = '';
+    }
+  }, [handleExtractText]);
 
 
   const handleExportToDocx = useCallback(async () => {
-    if (!extractedText) {
-      setErrorMessage("No text to export.");
+    if (extractedTextsList.length === 0) {
+      setErrorMessage("لا يوجد نص لتصديره.");
       return;
     }
     setIsExporting(true);
-    const success = await exportToDocx(extractedText);
+    setErrorMessage(null);
+    const combinedText = extractedTextsList
+      .map((text, index) => `--- صورة ${index + 1} ---\n${text}`)
+      .join('\n\n');
+      
+    const success = await exportToDocx(combinedText, 'النصوص_المستخرجة.docx');
     if (!success) {
       toast({
-        title: "Export Failed",
-        description: "Could not export the text to DOCX.",
+        title: "فشل التصدير",
+        description: "تعذر تصدير النص إلى DOCX.",
         variant: "destructive",
       });
-      setErrorMessage("Failed to generate DOCX file.");
+      setErrorMessage("فشل في إنشاء ملف DOCX.");
     }
     setIsExporting(false);
-  }, [extractedText, toast]);
+  }, [extractedTextsList, toast]);
 
-  const handleClearImage = () => {
-    setImageFile(null);
-    setImageDataUrl(null);
-    setExtractedText(null);
+  const handleClearSingleImage = (indexToRemove: number) => {
+    setImageDataUrlsList(prev => prev.filter((_, index) => index !== indexToRemove));
+    setImageFilesList(prev => prev.filter((_, index) => index !== indexToRemove));
+    setExtractedTextsList(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+  
+  const handleClearAllImages = () => {
+    setImageFilesList([]);
+    setImageDataUrlsList([]);
+    setExtractedTextsList([]);
     setErrorMessage(null);
     setShowCameraFeed(false);
     if (videoRef.current && videoRef.current.srcObject) {
@@ -127,14 +148,14 @@ export default function Home() {
     }
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ''; 
+      fileInput.value = '';
     }
   };
 
   const enableCamera = async () => {
-    handleClearImage(); // Clear any existing image
+    // Don't clear all images when enabling camera, allow adding to existing
     setShowCameraFeed(true);
-    setHasCameraPermission(null); // Reset permission status
+    setHasCameraPermission(null); 
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
@@ -146,17 +167,17 @@ export default function Home() {
       } catch (err) {
         console.error("Error accessing camera:", err);
         setHasCameraPermission(false);
-        setErrorMessage("Camera access was denied or is unavailable. Please check your browser permissions.");
+        setErrorMessage("تم رفض الوصول إلى الكاميرا أو أنها غير متوفرة. يرجى التحقق من أذونات المتصفح.");
         toast({
           variant: "destructive",
-          title: "Camera Access Denied",
-          description: "Please enable camera permissions in your browser settings.",
+          title: "تم رفض الوصول إلى الكاميرا",
+          description: "يرجى تمكين أذونات الكاميرا في إعدادات المتصفح.",
         });
         setShowCameraFeed(false);
       }
     } else {
       setHasCameraPermission(false);
-      setErrorMessage("Camera access is not supported by your browser.");
+      setErrorMessage("متصفحك لا يدعم الوصول إلى الكاميرا.");
       setShowCameraFeed(false);
     }
   };
@@ -171,9 +192,15 @@ export default function Home() {
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/png');
-        setImageDataUrl(dataUrl);
-        setImageFile(new File([dataUrl], "capture.png", { type: "image/png" })); 
-        setExtractedText(null);
+        
+        fetch(dataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                const capturedFile = new File([blob], `capture-${Date.now()}.png`, { type: "image/png" });
+                setImageFilesList(prev => [...prev, capturedFile]);
+            });
+
+        setImageDataUrlsList(prev => [...prev, dataUrl]);
         
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
@@ -181,9 +208,7 @@ export default function Home() {
             videoRef.current.srcObject = null;
         }
         setShowCameraFeed(false);
-        if (dataUrl) {
-            handleExtractText(dataUrl);
-        }
+        handleExtractText(dataUrl);
       }
     }
   }, [hasCameraPermission, handleExtractText]);
@@ -192,35 +217,55 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg text-foreground">Loading App...</p>
+        <p className="mt-4 text-lg text-foreground">جاري تحميل التطبيق...</p>
       </div>
     );
   }
+
+  const handleCopyToClipboard = async (textToCopy: string, imageNumber: number) => {
+    if (textToCopy) {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        toast({
+          title: `تم نسخ نص الصورة ${imageNumber}!`,
+          description: "تم نسخ النص المستخرج إلى الحافظة الخاصة بك.",
+        });
+      } catch (err) {
+        toast({
+          title: "فشل النسخ",
+          description: "تعذر نسخ النص إلى الحافظة.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-10 flex justify-center items-start">
-        <Card className="w-full max-w-2xl shadow-xl rounded-lg bg-card">
-          <CardHeader className="p-6">
-            <CardTitle className="text-3xl font-bold text-center text-foreground">
+        <Card className="w-full max-w-3xl shadow-xl rounded-lg bg-card">
+          <CardHeader className="p-6 text-center">
+            <CardTitle className="text-3xl font-bold text-foreground">
               استخراج النص من الصور
             </CardTitle>
-            <CardDescription className="text-center text-muted-foreground mt-2 text-base">
-              قم بتحميل أو التقاط صورة تحتوي على نص عربي. سنقوم باستخراجه لك.
+            <CardDescription className="text-muted-foreground mt-2 text-base">
+              قم بتحميل أو التقاط صور تحتوي على نص عربي. سنقوم باستخراجه لك.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             {!showCameraFeed && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label htmlFor="image-upload" className="text-md font-semibold text-foreground text-center block w-full">
-                  اختر صورة
+                  اختر صورة أو عدة صور
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     id="image-upload"
                     type="file"
                     accept="image/*"
+                    multiple // Allow multiple file selection
                     onChange={handleImageChange}
                     className="hidden"
                   />
@@ -234,7 +279,7 @@ export default function Home() {
                       htmlFor="image-upload"
                       className="cursor-pointer flex items-center justify-center w-full h-full"
                     >
-                      <FileUp className="mr-2 h-5 w-5" /> تحميل ملف
+                      <UploadCloud className="mr-2 h-5 w-5" /> تحميل ملفات
                     </Label>
                   </Button>
                   <Button
@@ -246,6 +291,16 @@ export default function Home() {
                     <Camera className="mr-2 h-5 w-5" /> استخدام الكاميرا
                   </Button>
                 </div>
+                {imageDataUrlsList.length > 0 && (
+                    <Button
+                        onClick={handleClearAllImages}
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" /> مسح جميع الصور
+                    </Button>
+                )}
               </div>
             )}
             
@@ -272,7 +327,7 @@ export default function Home() {
                     </div>
                 )}
                 <div className="flex gap-3">
-                    <Button onClick={handleCaptureImage} disabled={!hasCameraPermission} className="w-full" size="lg">
+                    <Button onClick={handleCaptureImage} disabled={!hasCameraPermission || !videoRef.current?.srcObject} className="w-full" size="lg">
                         <Camera className="mr-2 h-5 w-5" /> التقاط صورة
                     </Button>
                     <Button onClick={() => {
@@ -280,6 +335,7 @@ export default function Home() {
                         if (videoRef.current && videoRef.current.srcObject) {
                             const stream = videoRef.current.srcObject as MediaStream;
                             stream.getTracks().forEach(track => track.stop());
+                            videoRef.current.srcObject = null;
                         }
                     }} variant="outline" className="w-full" size="lg">
                         إلغاء
@@ -288,35 +344,46 @@ export default function Home() {
               </div>
             )}
 
-
-            {imageDataUrl && !showCameraFeed && (
-              <DynamicImagePreview imageDataUrl={imageDataUrl} onClearImage={handleClearImage} />
-            )}
-            
             {errorMessage && !showCameraFeed && ( 
-              <div className="p-3 bg-destructive/10 border border-destructive/50 rounded-md flex items-center text-destructive text-sm">
+              <div className="p-3 bg-destructive/10 border border-destructive/50 rounded-md flex items-center text-destructive text-sm whitespace-pre-line">
                 <AlertTriangle className="h-5 w-5 mr-2.5 flex-shrink-0" />
                 <p>{errorMessage}</p>
+              </div>
+            )}
+            
+            {imageDataUrlsList.length > 0 && !showCameraFeed && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">الصور المحددة:</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {imageDataUrlsList.map((url, index) => (
+                    <DynamicImagePreview 
+                        key={index} 
+                        imageDataUrl={url} 
+                        onClearImage={() => handleClearSingleImage(index)} 
+                    />
+                    ))}
+                </div>
               </div>
             )}
             
             {isExtracting && ( 
               <div className="flex flex-col items-center justify-center p-6 text-center rounded-md bg-card shadow-inner border border-border/50">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-                <p className="text-lg font-medium text-foreground">جاري معالجة الصورة...</p>
+                <p className="text-lg font-medium text-foreground">جاري معالجة الصور ({imageDataUrlsList.length - extractedTextsList.length} متبقية)...</p>
                 <p className="text-sm text-muted-foreground mt-1">قد يستغرق هذا بضع لحظات.</p>
               </div>
             )}
 
-            {extractedText && !isExtracting && (
+            {extractedTextsList.length > 0 && !isExtracting && (
                <DynamicExtractedTextView 
-                extractedText={extractedText}
+                extractedTexts={extractedTextsList}
                 isExporting={isExporting}
                 onExportToDocx={handleExportToDocx}
+                onCopyText={handleCopyToClipboard}
               />
             )}
           </CardContent>
-          <CardFooter className="p-6">
+          <CardFooter className="p-6 border-t mt-6">
             <p className="text-xs text-muted-foreground text-center w-full">
               للحصول على أفضل النتائج، استخدم صورًا واضحة ذات نص جيد الإضاءة.
             </p>

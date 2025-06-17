@@ -1,29 +1,27 @@
+
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Trash2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface ImagePreviewProps {
-  imageDataUrl: string | null;
+  imageDataUrl: string; // Changed from string | null as it will always be provided
   onClearImage: () => void;
 }
 
 export function ImagePreview({ imageDataUrl, onClearImage }: ImagePreviewProps) {
-  if (!imageDataUrl) return null;
-
   return (
-    <div className="mt-4 p-4 border border-dashed border-border rounded-lg bg-muted/20 relative group">
-      <h3 className="text-md font-semibold mb-3 text-foreground text-center">Image Preview</h3>
-      <div className="relative w-full max-w-md mx-auto aspect-[16/10] rounded-md overflow-hidden shadow-md border border-border">
+    <div className="p-2 border border-dashed border-border rounded-lg bg-muted/20 relative group aspect-video flex items-center justify-center">
+      <div className="relative w-full h-full max-w-full max-h-full rounded-md overflow-hidden shadow-sm border border-border/50">
         <Image src={imageDataUrl} alt="Selected preview" layout="fill" objectFit="contain" data-ai-hint="document scan" />
       </div>
       <Button 
         onClick={onClearImage} 
-        variant="ghost" 
+        variant="destructive" 
         size="icon" 
-        className="absolute top-2 right-2 h-8 w-8 bg-card/80 hover:bg-card text-muted-foreground hover:text-destructive group-hover:opacity-100 md:opacity-0 transition-opacity duration-200"
+        className="absolute top-1 right-1 h-7 w-7 bg-destructive/80 hover:bg-destructive text-destructive-foreground group-hover:opacity-100 opacity-0 transition-opacity duration-200 rounded-full z-10"
         aria-label="Clear image"
       >
-        <X className="h-5 w-5" />
+        <X className="h-4 w-4" />
       </Button>
     </div>
   );
