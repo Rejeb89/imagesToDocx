@@ -41,7 +41,7 @@ export default function Home() {
   const handleImageChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 4 * 1024 * 1024) { // Limit file size (e.g., 4MB)
+      if (file.size > 4 * 1024 * 1024) { 
         setErrorMessage("Image size should be less than 4MB.");
         setImageFile(null);
         setImageDataUrl(null);
@@ -70,10 +70,12 @@ export default function Home() {
     try {
       const result = await imageToTextConversion({ photoDataUri: imageDataUrl });
       setExtractedText(result.text || "No text found in the image.");
-      toast({
-        title: "Text Extraction Successful",
-        description: "Text has been extracted from the image.",
-      });
+      // Toast messages are good for errors, but for success, visual feedback is often enough.
+      // Consider removing this success toast if the UI update is clear.
+      // toast({
+      //   title: "Text Extraction Successful",
+      //   description: "Text has been extracted from the image.",
+      // });
     } catch (error) {
       console.error("Error extracting text:", error);
       setErrorMessage("Failed to extract text. The image might be too complex or not contain clearly visible Arabic text. Please try another image.");
@@ -95,10 +97,11 @@ export default function Home() {
     setIsExporting(true);
     const success = await exportToDocx(extractedText);
     if (success) {
-      toast({
-        title: "Export Successful",
-        description: "The text has been exported to a DOCX file.",
-      });
+      // Similar to extraction, consider if a toast is needed for success.
+      // toast({
+      //   title: "Export Successful",
+      //   description: "The text has been exported to a DOCX file.",
+      // });
     } else {
       toast({
         title: "Export Failed",
@@ -117,7 +120,7 @@ export default function Home() {
     setErrorMessage(null);
     const fileInput = document.getElementById('image-upload') as HTMLInputElement;
     if (fileInput) {
-      fileInput.value = ''; // Reset file input
+      fileInput.value = ''; 
     }
   };
   
@@ -133,20 +136,22 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
       <AppHeader />
-      <main className="flex-grow container mx-auto px-4 py-8 flex justify-center items-start">
-        <Card className="w-full max-w-2xl shadow-2xl rounded-xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-200 p-6">
-            <CardTitle className="text-2xl font-headline text-center text-primary">Image to Text Converter</CardTitle>
-            <CardDescription className="text-center text-muted-foreground mt-1">
-              Capture or upload an image with Arabic text to convert it into an editable DOCX file.
+      <main className="flex-grow container mx-auto px-4 py-10 flex justify-center items-start">
+        <Card className="w-full max-w-xl shadow-xl rounded-lg">
+          <CardHeader className="p-6">
+            <CardTitle className="text-3xl font-headline text-center text-foreground">
+              Extract Text from Images
+            </CardTitle>
+            <CardDescription className="text-center text-muted-foreground mt-2">
+              Upload or capture an image with Arabic text. We&apos;ll extract it for you.
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="image-upload" className="text-base font-semibold text-foreground">
-                Upload Image
+          <CardContent className="p-6 pt-2 space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="image-upload" className="text-md font-medium text-foreground">
+                Choose an Image
               </Label>
-              <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   id="image-upload"
                   type="file"
@@ -154,19 +159,33 @@ export default function Home() {
                   onChange={handleImageChange}
                   className="hidden"
                 />
-                <Label
-                  htmlFor="image-upload"
-                  className="w-full sm:w-auto flex-grow cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-input bg-transparent rounded-md shadow-sm text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors"
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full py-3 text-base"
+                  size="lg"
                 >
-                  <FileUp className="mr-2 h-5 w-5" /> Choose File
-                </Label>
-                <Label
-                  htmlFor="image-upload"
-                  className="w-full sm:w-auto sm:flex-shrink-0 cursor-pointer inline-flex items-center justify-center px-4 py-2 border border-transparent bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
-                  onClick={() => document.getElementById('image-upload')?.setAttribute('capture', 'camera')}
+                  <Label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex items-center justify-center w-full h-full"
+                  >
+                    <FileUp className="mr-2 h-5 w-5" /> Upload File
+                  </Label>
+                </Button>
+                <Button
+                  asChild
+                  variant="default"
+                  className="w-full py-3 text-base"
+                  size="lg"
                 >
-                  <Camera className="mr-2 h-5 w-5" /> Use Camera
-                </Label>
+                  <Label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex items-center justify-center w-full h-full"
+                    onClick={() => document.getElementById('image-upload')?.setAttribute('capture', 'environment')}
+                  >
+                    <Camera className="mr-2 h-5 w-5" /> Use Camera
+                  </Label>
+                </Button>
               </div>
             </div>
 
@@ -175,28 +194,29 @@ export default function Home() {
             )}
             
             {errorMessage && (
-              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md flex items-center text-destructive">
-                <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
-                <p className="text-sm">{errorMessage}</p>
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md flex items-center text-destructive text-sm">
+                <AlertTriangle className="h-5 w-5 mr-2.5 flex-shrink-0" />
+                <p>{errorMessage}</p>
               </div>
             )}
 
-            {imageFile && !extractedText && (
+            {imageFile && !extractedText && !isExtracting && (
               <Button
                 onClick={handleExtractText}
                 disabled={isExtracting || !imageDataUrl}
                 className="w-full mt-4 text-base py-3"
                 size="lg"
               >
-                {isExtracting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ScanText className="mr-2 h-5 w-5" />}
-                {isExtracting ? 'Extracting Text...' : 'Extract Text from Image'}
+                <ScanText className="mr-2 h-5 w-5" />
+                Extract Text
               </Button>
             )}
-
-            {isExtracting && extractedText === null && ( 
-              <div className="flex flex-col items-center justify-center p-6 text-center">
+            
+            {isExtracting && ( 
+              <div className="flex flex-col items-center justify-center p-6 text-center rounded-md bg-muted/40">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
                 <p className="text-lg text-muted-foreground">Processing image, please wait...</p>
+                <p className="text-sm text-muted-foreground mt-1">This may take a few moments.</p>
               </div>
             )}
 
@@ -208,14 +228,14 @@ export default function Home() {
               />
             )}
           </CardContent>
-          <CardFooter className="bg-gray-50 border-t border-gray-200 p-4">
+          <CardFooter className="p-6 pt-2">
             <p className="text-xs text-muted-foreground text-center w-full">
-              Ensure the image is clear and text is well-lit for best results.
+              For best results, use clear images with well-lit text.
             </p>
           </CardFooter>
         </Card>
       </main>
-      <footer className="text-center py-4 text-sm text-muted-foreground border-t border-border">
+      <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border/70">
         © {new Date().getFullYear()} Text Capture Pro. All rights reserved.
       </footer>
     </div>
