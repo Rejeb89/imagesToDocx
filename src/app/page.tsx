@@ -272,7 +272,7 @@ export default function Home() {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full py-3 text-base border-primary text-primary hover:bg-primary/10"
+                    className="w-full py-3 text-base border-primary text-primary hover:bg-primary/10 hover:text-foreground"
                     size="lg"
                   >
                     <Label
@@ -396,3 +396,4 @@ export default function Home() {
     </div>
   );
 }
+
