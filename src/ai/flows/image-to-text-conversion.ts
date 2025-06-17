@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview Converts an image containing Arabic text into a digital text format.
+ * @fileOverview Converts an image containing text into a digital text format.
  *
  * - imageToTextConversion - A function that handles the image to text conversion process.
  * - ImageToTextConversionInput - The input type for the imageToTextConversion function.
@@ -14,7 +15,7 @@ const ImageToTextConversionInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo containing Arabic text, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo containing text, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type ImageToTextConversionInput = z.infer<typeof ImageToTextConversionInputSchema>;
@@ -32,7 +33,7 @@ const prompt = ai.definePrompt({
   name: 'imageToTextConversionPrompt',
   input: {schema: ImageToTextConversionInputSchema},
   output: {schema: ImageToTextConversionOutputSchema},
-  prompt: `You are an expert OCR reader that specializes in extracting text from images, especially Arabic text. Extract all the text from the image, and output the text in the 'text' field.
+  prompt: `You are an expert OCR reader that specializes in extracting text from images. Extract all the text from the image, and output the text in the 'text' field.
 If the image contains tables, try to preserve the tabular structure as best as possible in the extracted text, for example by using delimiters like commas or tabs between cell content within a row, and newlines for new rows.
 
 Image: {{media url=photoDataUri}}`,

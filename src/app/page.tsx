@@ -48,22 +48,20 @@ export default function Home() {
 
   const handleExtractText = useCallback(async (dataUrlToProcess: string) => {
     if (!dataUrlToProcess) {
-      // This case should ideally not be hit if called correctly
       return;
     }
     setExtractionCount(prev => prev + 1);
     setErrorMessage(null);
     try {
       const result = await imageToTextConversion({ photoDataUri: dataUrlToProcess });
-      setExtractedTextsList(prev => [...prev, result.text || "لم يتم العثور على نص في الصورة."]);
+      setExtractedTextsList(prev => [...prev, result.text || "No text found in the image."]);
     } catch (error) {
       console.error("Error extracting text:", error);
-      // Add a placeholder for the failed extraction to maintain list order
-      setExtractedTextsList(prev => [...prev, "فشل استخراج النص لهذه الصورة."]);
-      setErrorMessage("فشل استخراج النص لبعض الصور. قد تكون الصورة معقدة جدًا أو لا تحتوي على نص عربي واضح.");
+      setExtractedTextsList(prev => [...prev, "Text extraction failed for this image."]);
+      setErrorMessage("Text extraction failed for some images. The image might be too complex or not contain clear text.");
       toast({
-        title: "خطأ في الاستخراج",
-        description: "تعذر استخراج النص من إحدى الصور.",
+        title: "Extraction Error",
+        description: "Could not extract text from one of the images.",
         variant: "destructive",
       });
     } finally {
@@ -76,17 +74,11 @@ export default function Home() {
     const files = event.target.files;
     if (files && files.length > 0) {
       const newFilesArray = Array.from(files);
-      // Clear previous errors when new files are uploaded
       setErrorMessage(null); 
       
-      // Optionally clear previous images, or append. For now, let's append.
-      // setImageFilesList([]);
-      // setImageDataUrlsList([]);
-      // setExtractedTextsList([]);
-
       newFilesArray.forEach(file => {
-        if (file.size > 4 * 1024 * 1024) {
-          setErrorMessage(prevError => (prevError ? prevError + "\n" : "") + `حجم الملف ${file.name} كبير جدًا (الحد الأقصى 4 ميجابايت).`);
+        if (file.size > 4 * 1024 * 1024) { // 4MB limit
+          setErrorMessage(prevError => (prevError ? prevError + "\n" : "") + `File ${file.name} is too large (max 4MB).`);
           return;
         }
         setImageFilesList(prev => [...prev, file]);
@@ -94,12 +86,11 @@ export default function Home() {
         reader.onloadend = () => {
           const dataUrl = reader.result as string;
           setImageDataUrlsList(prev => [...prev, dataUrl]);
-          handleExtractText(dataUrl);
+          handleExtractText(dataUrl); // Automatically extract text
         };
         reader.readAsDataURL(file);
       });
     }
-     // Reset file input to allow re-uploading the same file(s) if needed
     if (event.target) {
         event.target.value = '';
     }
@@ -108,23 +99,23 @@ export default function Home() {
 
   const handleExportToDocx = useCallback(async () => {
     if (extractedTextsList.length === 0) {
-      setErrorMessage("لا يوجد نص لتصديره.");
+      setErrorMessage("No text to export.");
       return;
     }
     setIsExporting(true);
     setErrorMessage(null);
     const combinedText = extractedTextsList
-      .map((text, index) => `--- صورة ${index + 1} ---\n${text}`)
+      .map((text, index) => `--- Image ${index + 1} ---\n${text}`)
       .join('\n\n');
       
-    const success = await exportToDocx(combinedText, 'النصوص_المستخرجة.docx');
+    const success = await exportToDocx(combinedText, 'extracted_texts.docx');
     if (!success) {
       toast({
-        title: "فشل التصدير",
-        description: "تعذر تصدير النص إلى DOCX.",
+        title: "Export Failed",
+        description: "Could not export text to DOCX.",
         variant: "destructive",
       });
-      setErrorMessage("فشل في إنشاء ملف DOCX.");
+      setErrorMessage("Failed to create DOCX file.");
     }
     setIsExporting(false);
   }, [extractedTextsList, toast]);
@@ -153,7 +144,6 @@ export default function Home() {
   };
 
   const enableCamera = async () => {
-    // Don't clear all images when enabling camera, allow adding to existing
     setShowCameraFeed(true);
     setHasCameraPermission(null); 
 
@@ -167,17 +157,17 @@ export default function Home() {
       } catch (err) {
         console.error("Error accessing camera:", err);
         setHasCameraPermission(false);
-        setErrorMessage("تم رفض الوصول إلى الكاميرا أو أنها غير متوفرة. يرجى التحقق من أذونات المتصفح.");
+        setErrorMessage("Camera access denied or unavailable. Please check browser permissions.");
         toast({
           variant: "destructive",
-          title: "تم رفض الوصول إلى الكاميرا",
-          description: "يرجى تمكين أذونات الكاميرا في إعدادات المتصفح.",
+          title: "Camera Access Denied",
+          description: "Please enable camera permissions in your browser settings.",
         });
         setShowCameraFeed(false);
       }
     } else {
       setHasCameraPermission(false);
-      setErrorMessage("متصفحك لا يدعم الوصول إلى الكاميرا.");
+      setErrorMessage("Your browser does not support camera access.");
       setShowCameraFeed(false);
     }
   };
@@ -208,7 +198,7 @@ export default function Home() {
             videoRef.current.srcObject = null;
         }
         setShowCameraFeed(false);
-        handleExtractText(dataUrl);
+        handleExtractText(dataUrl); // Automatically extract text
       }
     }
   }, [hasCameraPermission, handleExtractText]);
@@ -217,7 +207,7 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg text-foreground">جاري تحميل التطبيق...</p>
+        <p className="mt-4 text-lg text-foreground">Loading application...</p>
       </div>
     );
   }
@@ -227,13 +217,13 @@ export default function Home() {
       try {
         await navigator.clipboard.writeText(textToCopy);
         toast({
-          title: `تم نسخ نص الصورة ${imageNumber}!`,
-          description: "تم نسخ النص المستخرج إلى الحافظة الخاصة بك.",
+          title: `Text from Image ${imageNumber} copied!`,
+          description: "The extracted text has been copied to your clipboard.",
         });
       } catch (err) {
         toast({
-          title: "فشل النسخ",
-          description: "تعذر نسخ النص إلى الحافظة.",
+          title: "Copy Failed",
+          description: "Could not copy text to clipboard.",
           variant: "destructive",
         });
       }
@@ -245,27 +235,27 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background font-body">
       <AppHeader />
       <main className="flex-grow container mx-auto px-4 py-10 flex justify-center items-start">
-        <Card className="w-full max-w-3xl shadow-xl rounded-lg bg-card">
+        <Card className="w-full max-w-3xl shadow-xl rounded-lg">
           <CardHeader className="p-6 text-center">
             <CardTitle className="text-3xl font-bold text-foreground">
-              استخراج النص من الصور
+              Extract Text from Images
             </CardTitle>
             <CardDescription className="text-muted-foreground mt-2 text-base">
-              قم بتحميل أو التقاط صور تحتوي على نص عربي. سنقوم باستخراجه لك.
+              Upload or capture images containing text. We'll extract it for you.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             {!showCameraFeed && (
               <div className="space-y-4">
                 <Label htmlFor="image-upload" className="text-md font-semibold text-foreground text-center block w-full">
-                  اختر صورة أو عدة صور
+                  Choose an image or multiple images
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     id="image-upload"
                     type="file"
                     accept="image/*"
-                    multiple // Allow multiple file selection
+                    multiple
                     onChange={handleImageChange}
                     className="hidden"
                   />
@@ -279,7 +269,7 @@ export default function Home() {
                       htmlFor="image-upload"
                       className="cursor-pointer flex items-center justify-center w-full h-full"
                     >
-                      <UploadCloud className="mr-2 h-5 w-5" /> تحميل ملفات
+                      <UploadCloud className="mr-2 h-5 w-5" /> Upload Files
                     </Label>
                   </Button>
                   <Button
@@ -288,7 +278,7 @@ export default function Home() {
                     className="w-full py-3 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
                     size="lg"
                   >
-                    <Camera className="mr-2 h-5 w-5" /> استخدام الكاميرا
+                    <Camera className="mr-2 h-5 w-5" /> Use Camera
                   </Button>
                 </div>
                 {imageDataUrlsList.length > 0 && (
@@ -298,7 +288,7 @@ export default function Home() {
                         size="sm"
                         className="w-full sm:w-auto"
                     >
-                        <Trash2 className="mr-2 h-4 w-4" /> مسح جميع الصور
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear All Images
                     </Button>
                 )}
               </div>
@@ -314,21 +304,21 @@ export default function Home() {
                 {hasCameraPermission === false && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>فشل الوصول إلى الكاميرا</AlertTitle>
+                    <AlertTitle>Camera Access Failed</AlertTitle>
                     <AlertDescription>
-                      {errorMessage || "يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح."}
+                      {errorMessage || "Please allow camera access in your browser settings."}
                     </AlertDescription>
                   </Alert>
                 )}
                  {hasCameraPermission === null && !errorMessage && (
                     <div className="flex items-center justify-center p-4 text-muted-foreground">
                         <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                        جاري طلب إذن الكاميرا...
+                        Requesting camera permission...
                     </div>
                 )}
                 <div className="flex gap-3">
                     <Button onClick={handleCaptureImage} disabled={!hasCameraPermission || !videoRef.current?.srcObject} className="w-full" size="lg">
-                        <Camera className="mr-2 h-5 w-5" /> التقاط صورة
+                        <Camera className="mr-2 h-5 w-5" /> Capture Image
                     </Button>
                     <Button onClick={() => {
                         setShowCameraFeed(false);
@@ -338,7 +328,7 @@ export default function Home() {
                             videoRef.current.srcObject = null;
                         }
                     }} variant="outline" className="w-full" size="lg">
-                        إلغاء
+                        Cancel
                     </Button>
                 </div>
               </div>
@@ -353,7 +343,7 @@ export default function Home() {
             
             {imageDataUrlsList.length > 0 && !showCameraFeed && (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground">الصور المحددة:</h3>
+                <h3 className="text-lg font-semibold text-foreground">Selected Images:</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {imageDataUrlsList.map((url, index) => (
                     <DynamicImagePreview 
@@ -369,8 +359,8 @@ export default function Home() {
             {isExtracting && ( 
               <div className="flex flex-col items-center justify-center p-6 text-center rounded-md bg-card shadow-inner border border-border/50">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-                <p className="text-lg font-medium text-foreground">جاري معالجة الصور ({imageDataUrlsList.length - extractedTextsList.length} متبقية)...</p>
-                <p className="text-sm text-muted-foreground mt-1">قد يستغرق هذا بضع لحظات.</p>
+                <p className="text-lg font-medium text-foreground">Processing images ({imageDataUrlsList.length - extractedTextsList.length} remaining)...</p>
+                <p className="text-sm text-muted-foreground mt-1">This might take a few moments.</p>
               </div>
             )}
 
@@ -385,15 +375,14 @@ export default function Home() {
           </CardContent>
           <CardFooter className="p-6 border-t mt-6">
             <p className="text-xs text-muted-foreground text-center w-full">
-              للحصول على أفضل النتائج، استخدم صورًا واضحة ذات نص جيد الإضاءة.
+              For best results, use clear images with well-lit text.
             </p>
           </CardFooter>
         </Card>
       </main>
       <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border bg-card">
-        © {new Date().getFullYear()} Text Capture Pro. جميع الحقوق محفوظة.
+        © {new Date().getFullYear()} Text Capture Pro. All rights reserved.
       </footer>
     </div>
   );
 }
-

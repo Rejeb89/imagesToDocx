@@ -20,7 +20,7 @@ export function ExtractedTextView({ extractedTexts, isExporting, onExportToDocx,
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-foreground flex items-center">
             <FileText className="mr-2 h-6 w-6 text-primary" />
-            النصوص المستخرجة
+            Extracted Texts
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -28,11 +28,11 @@ export function ExtractedTextView({ extractedTexts, isExporting, onExportToDocx,
           <div key={index} className="space-y-2 p-3 border rounded-md bg-card">
             <div className="flex justify-between items-center">
               <Label htmlFor={`extracted-text-${index}`} className="text-sm font-medium text-foreground">
-                النص من الصورة {index + 1}
+                Text from Image {index + 1}
               </Label>
               <Button variant="ghost" size="sm" onClick={() => onCopyText(text, index + 1)} aria-label={`Copy text from image ${index + 1}`}>
                 <Copy className="h-4 w-4 mr-1.5" />
-                نسخ
+                Copy
               </Button>
             </div>
             <Textarea
@@ -40,10 +40,8 @@ export function ExtractedTextView({ extractedTexts, isExporting, onExportToDocx,
               value={text}
               readOnly
               rows={8}
-              className="w-full p-2.5 border-input rounded-md shadow-sm bg-muted/50 text-foreground text-right focus:ring-primary text-sm"
-              dir="rtl"
-              lang="ar"
-              aria-label={`Extracted Arabic text from image ${index + 1}`}
+              className="w-full p-2.5 border-input rounded-md shadow-sm bg-muted/50 text-foreground focus:ring-primary text-sm"
+              aria-label={`Extracted text from image ${index + 1}`}
             />
           </div>
         ))}
@@ -56,7 +54,7 @@ export function ExtractedTextView({ extractedTexts, isExporting, onExportToDocx,
             size="lg"
           >
             {isExporting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
-            {isExporting ? 'جاري التصدير...' : 'تحميل كل النصوص كـ DOCX'}
+            {isExporting ? 'Exporting...' : 'Download All as DOCX'}
           </Button>
         )}
       </CardContent>

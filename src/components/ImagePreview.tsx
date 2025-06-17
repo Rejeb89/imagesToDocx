@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
 interface ImagePreviewProps {
-  imageDataUrl: string; // Changed from string | null as it will always be provided
+  imageDataUrl: string;
   onClearImage: () => void;
 }
 
@@ -12,7 +12,7 @@ export function ImagePreview({ imageDataUrl, onClearImage }: ImagePreviewProps) 
   return (
     <div className="p-2 border border-dashed border-border rounded-lg bg-muted/20 relative group aspect-video flex items-center justify-center">
       <div className="relative w-full h-full max-w-full max-h-full rounded-md overflow-hidden shadow-sm border border-border/50">
-        <Image src={imageDataUrl} alt="Selected preview" layout="fill" objectFit="contain" data-ai-hint="document scan" />
+        <Image src={imageDataUrl} alt="Uploaded image preview" layout="fill" objectFit="contain" data-ai-hint="document scan" />
       </div>
       <Button 
         onClick={onClearImage} 
