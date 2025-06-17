@@ -33,6 +33,7 @@ const prompt = ai.definePrompt({
   input: {schema: ImageToTextConversionInputSchema},
   output: {schema: ImageToTextConversionOutputSchema},
   prompt: `You are an expert OCR reader that specializes in extracting text from images, especially Arabic text. Extract all the text from the image, and output the text in the 'text' field.
+If the image contains tables, try to preserve the tabular structure as best as possible in the extracted text, for example by using delimiters like commas or tabs between cell content within a row, and newlines for new rows.
 
 Image: {{media url=photoDataUri}}`,
 });
