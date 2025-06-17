@@ -1,23 +1,34 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { imageToTextConversion } from '@/ai/flows/image-to-text-conversion';
 import { exportToDocx } from '@/lib/docx-utils';
-import { Camera, FileUp, Loader2, AlertTriangle, Download, ScanText, Trash2 } from 'lucide-react';
+import { Camera, FileUp, Loader2, AlertTriangle, ScanText } from 'lucide-react';
 import { AppHeader } from '@/components/AppHeader';
+
+const DynamicImagePreview = dynamic(() => import('@/components/ImagePreview').then(mod => mod.ImagePreview), {
+  loading: () => <div className="flex justify-center items-center p-4"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Loading Preview...</p></div>,
+  ssr: false
+});
+
+const DynamicExtractedTextView = dynamic(() => import('@/components/ExtractedTextView').then(mod => mod.ExtractedTextView), {
+  loading: () => <div className="flex justify-center items-center p-4"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="ml-2">Loading Text View...</p></div>,
+  ssr: false
+});
+
 
 export default function Home() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -53,7 +64,7 @@ export default function Home() {
       setErrorMessage("Please select an image first.");
       return;
     }
-    setIsProcessing(true);
+    setIsExtracting(true);
     setExtractedText(null);
     setErrorMessage(null);
     try {
@@ -72,7 +83,7 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
+      setIsExtracting(false);
     }
   }, [imageDataUrl, toast]);
 
@@ -81,7 +92,7 @@ export default function Home() {
       setErrorMessage("No text to export.");
       return;
     }
-    setIsProcessing(true); // Reuse for DOCX processing indication
+    setIsExporting(true);
     const success = await exportToDocx(extractedText);
     if (success) {
       toast({
@@ -96,7 +107,7 @@ export default function Home() {
       });
       setErrorMessage("Failed to generate DOCX file.");
     }
-    setIsProcessing(false);
+    setIsExporting(false);
   }, [extractedText, toast]);
 
   const handleClearImage = () => {
@@ -160,15 +171,7 @@ export default function Home() {
             </div>
 
             {imageDataUrl && (
-              <div className="mt-6 p-4 border border-dashed border-border rounded-lg bg-muted/20">
-                <h3 className="text-lg font-semibold mb-2 text-foreground text-center">Image Preview</h3>
-                <div className="relative w-full max-w-md mx-auto aspect-video rounded-md overflow-hidden shadow-md">
-                  <Image src={imageDataUrl} alt="Selected preview" layout="fill" objectFit="contain" data-ai-hint="document scan" />
-                </div>
-                <Button onClick={handleClearImage} variant="outline" size="sm" className="mt-4 mx-auto flex items-center">
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear Image
-                </Button>
-              </div>
+              <DynamicImagePreview imageDataUrl={imageDataUrl} onClearImage={handleClearImage} />
             )}
             
             {errorMessage && (
@@ -181,16 +184,16 @@ export default function Home() {
             {imageFile && !extractedText && (
               <Button
                 onClick={handleExtractText}
-                disabled={isProcessing || !imageDataUrl}
+                disabled={isExtracting || !imageDataUrl}
                 className="w-full mt-4 text-base py-3"
                 size="lg"
               >
-                {isProcessing && !extractedText ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ScanText className="mr-2 h-5 w-5" />}
-                {isProcessing && !extractedText ? 'Extracting Text...' : 'Extract Text from Image'}
+                {isExtracting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ScanText className="mr-2 h-5 w-5" />}
+                {isExtracting ? 'Extracting Text...' : 'Extract Text from Image'}
               </Button>
             )}
 
-            {isProcessing && extractedText === null && ( // Only show general processing if no text yet
+            {isExtracting && extractedText === null && ( 
               <div className="flex flex-col items-center justify-center p-6 text-center">
                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
                 <p className="text-lg text-muted-foreground">Processing image, please wait...</p>
@@ -198,31 +201,11 @@ export default function Home() {
             )}
 
             {extractedText && (
-              <div className="space-y-4 mt-6">
-                <Label htmlFor="extracted-text-area" className="text-base font-semibold text-foreground">
-                  Extracted Text (النص المستخرج)
-                </Label>
-                <Textarea
-                  id="extracted-text-area"
-                  value={extractedText}
-                  readOnly
-                  rows={10}
-                  className="w-full p-3 border-border rounded-md shadow-sm bg-muted/30 text-foreground text-right focus:ring-primary"
-                  dir="rtl"
-                  lang="ar"
-                  aria-label="Extracted Arabic text"
-                />
-                <Button
-                  onClick={handleExportToDocx}
-                  disabled={isProcessing || !extractedText}
-                  className="w-full text-base py-3"
-                  variant="default"
-                  size="lg"
-                >
-                  {isProcessing && extractedText ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Download className="mr-2 h-5 w-5" />}
-                  {isProcessing && extractedText ? 'Exporting...' : 'Download as DOCX'}
-                </Button>
-              </div>
+               <DynamicExtractedTextView 
+                extractedText={extractedText}
+                isExporting={isExporting}
+                onExportToDocx={handleExportToDocx}
+              />
             )}
           </CardContent>
           <CardFooter className="bg-gray-50 border-t border-gray-200 p-4">
