@@ -381,7 +381,7 @@ export default function Home() {
         </Card>
       </main>
       <footer className="text-center py-6 text-sm text-muted-foreground border-t border-border bg-card">
-        © {new Date().getFullYear()} Textify Ai. All rights reserved.
+        © {new Date().getFullYear()} All rights reserved.
       </footer>
     </div>
   );
