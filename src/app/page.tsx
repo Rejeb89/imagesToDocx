@@ -108,7 +108,9 @@ export default function Home() {
       .map((text, index) => `--- Image ${index + 1} ---\n${text}`)
       .join('\n\n');
       
-    const success = await exportToDocx(combinedText, 'extracted_texts.docx');
+    const fileName = `extracted_texts_${Date.now()}.docx`;
+    const success = await exportToDocx(combinedText, fileName);
+
     if (!success) {
       toast({
         title: "Export Failed",
